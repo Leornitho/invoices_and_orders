@@ -89,7 +89,7 @@ function buildPivot() {
     const product = String(t.H_product_format_name[i] || '?');
     const client  = String(t.H_order_id[i] || '?');
     const qty     = Number(t.quantity_planned[i]) || 0;
-    const maxQty  = Number(t.quantity_max[i]) || 0;
+    const maxQty  = Number(t.quantity_ordered[i]) || 0;
     const actual  = Number(t.quantity[i]) || 0;
 
     productSet.add(product);
