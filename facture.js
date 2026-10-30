@@ -59,7 +59,6 @@ const data = {
   invoice: '',
   status: '',
   displayMode: 'detailed',
-  emailModal: { visible: false, to: '', from: '', body: '' },
 };
 let app = undefined;
 
@@ -349,100 +348,12 @@ ready(function() {
       toggleMode() {
         this.displayMode = this.displayMode === 'detailed' ? 'summary' : 'detailed';
       },
-      openEmailModal() {
+      downloadPDF() {
         const inv = this.invoice;
-        const customerEmail = inv.customer && typeof inv.customer === 'object' ? (inv.customer.email || '') : '';
-        const storeEmail    = inv.store    && typeof inv.store    === 'object' ? (inv.store.email    || '') : '';
-        this.emailModal = {
-          visible: true,
-          to:   customerEmail,
-          from: storeEmail,
-          body: 'Bonjour, voici la facture pour les dernières commandes, à payer dans les 30 jours. Merci beaucoup, La Ferme Chautems',
-        };
-      },
-      async confirmSendEmail() {
-        const modal    = Object.assign({}, this.emailModal);
-        this.emailModal.visible = false;
-
-        const inv      = this.invoice;
-        const filename = (inv.invoice_file_name || ('facture_' + (inv.invoice_id || 'export'))) + '.pdf';
-        const subject  = 'Facture ' + (inv.invoice_id || '');
-
-        const invoiceEl  = document.querySelector('.invoice');
-        const paySection = document.querySelector('.payment-section');
-
-        const MARGIN   = 10;
-        const USABLE_W = 190; // mm  (210 − 2×10)
-        const USABLE_H = 277; // mm  (297 − 2×10)
-
-        const ignoreEl = el => el.classList && (
-          el.classList.contains('mode-toggle') ||
-          el.classList.contains('print')
-        );
-
-        // Render at a fixed A4 width so the PDF looks the same regardless of window size.
-        const RENDER_PX = 794; // A4 at 96 dpi
-
-        const fixWidth = el => {
-          el._savedWidth    = el.style.width;
-          el._savedMaxWidth = el.style.maxWidth;
-          el.style.width    = RENDER_PX + 'px';
-          el.style.maxWidth = 'none';
-          void el.offsetWidth; // force reflow
-        };
-        const restoreWidth = el => {
-          el.style.width    = el._savedWidth;
-          el.style.maxWidth = el._savedMaxWidth;
-        };
-
-        try {
-          // Capture invoice content with payment section hidden
-          paySection.style.display = 'none';
-          fixWidth(invoiceEl);
-          const c1 = await html2canvas(invoiceEl, {
-            scale: 2, useCORS: true, logging: false,
-            windowWidth: RENDER_PX, ignoreElements: ignoreEl,
-          });
-          restoreWidth(invoiceEl);
-          paySection.style.display = '';
-
-          // Capture payment section separately
-          fixWidth(paySection);
-          const c2 = await html2canvas(paySection, {
-            scale: 2, useCORS: true, logging: false, windowWidth: RENDER_PX,
-          });
-          restoreWidth(paySection);
-
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-
-          // Lay invoice content across as many A4 pages as needed
-          const h1   = c1.height / c1.width * USABLE_W;
-          const img1 = c1.toDataURL('image/jpeg', 0.95);
-          for (let page = 0; page * USABLE_H < h1; page++) {
-            if (page > 0) pdf.addPage();
-            pdf.addImage(img1, 'JPEG', MARGIN, MARGIN - page * USABLE_H, USABLE_W, h1);
-          }
-
-          // Payment section always starts on a fresh page
-          pdf.addPage();
-          const h2 = c2.height / c2.width * USABLE_W;
-          pdf.addImage(c2.toDataURL('image/jpeg', 0.95), 'JPEG', MARGIN, MARGIN, USABLE_W, h2);
-
-          // Download PDF locally
-          pdf.save(filename);
-
-          const a = document.createElement('a');
-          a.href = 'mailto:' + encodeURIComponent(modal.to)
-            + '?subject=' + encodeURIComponent(subject)
-            + '&body='    + encodeURIComponent(modal.body);
-          a.click();
-        } catch(e) {
-          restoreWidth(invoiceEl);
-          restoreWidth(paySection);
-          paySection.style.display = '';
-          console.error('PDF error:', e);
-        }
+        const prevTitle = document.title;
+        document.title = inv.invoice_file_name || ('facture_' + (inv.invoice_id || 'export'));
+        window.print();
+        document.title = prevTitle;
       },
     },
   });
