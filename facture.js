@@ -59,6 +59,7 @@ const data = {
   invoice: '',
   status: '',
   displayMode: 'detailed',
+  showRabais: true,
 };
 let app = undefined;
 

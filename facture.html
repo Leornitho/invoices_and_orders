@@ -206,10 +206,13 @@
             </div>
           </div>
 
-          <!-- Mode toggle + email button (hidden on print) -->
+          <!-- Mode toggle + action buttons (hidden on print) -->
           <div class="mode-toggle">
             <a href="javascript:void(0)" v-on:click="toggleMode">
               {{ displayMode === 'detailed' ? 'Afficher par commandes' : 'Afficher le détail des articles' }}
+            </a>
+            <a href="javascript:void(0)" v-on:click="showRabais = !showRabais">
+              {{ showRabais ? 'Cacher rabais' : 'Afficher rabais' }}
             </a>
             <a href="javascript:void(0)" v-on:click="downloadPDF">
               Télécharger PDF
@@ -233,14 +236,14 @@
                 <tr>
                   <th>Produit</th>
                   <th class="money">Prix unitaire</th>
-                  <th class="money">Rabais produit</th>
+                  <th v-if="showRabais" class="money">Rabais produit</th>
                   <th class="number">Quantité</th>
                   <th class="money">Total</th>
                 </tr>
                 <tr v-for="item in invoice.detailed_sales">
                   <td>{{ item.product_format_clientside }}</td>
                   <td class="money">{{ item.unit_price_final.toFixed(2) }} {{ item.UI_price_format }}</td>
-                  <td class="money">{{ item.discount_manual | percent }}</td>
+                  <td v-if="showRabais" class="money">{{ item.discount_manual | percent }}</td>
                   <td class="number">{{ item.quantity }}</td>
                   <td class="money">{{ item.total_price_final | currency }}</td>
                 </tr>
