@@ -351,10 +351,38 @@ ready(function() {
       },
       downloadPDF() {
         const inv = this.invoice;
-        const prevTitle = document.title;
-        document.title = inv.invoice_file_name || ('facture_' + (inv.invoice_id || 'export'));
-        window.print();
-        document.title = prevTitle;
+        const filename = inv.invoice_file_name || ('facture_' + (inv.invoice_id || 'export'));
+
+        // QR code is a <canvas> — convert it to <img> so outerHTML captures it.
+        const qrContainer = document.getElementById('qr-code-container');
+        const canvas = qrContainer && qrContainer.querySelector('canvas');
+        let savedQR = null;
+        if (canvas) {
+          savedQR = qrContainer.innerHTML;
+          const img = document.createElement('img');
+          img.src = canvas.toDataURL('image/png');
+          img.width = canvas.width;
+          img.height = canvas.height;
+          qrContainer.innerHTML = '';
+          qrContainer.appendChild(img);
+        }
+
+        // Collect all styles (inline <style> blocks + external <link> sheets).
+        const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+          .map(el => el.outerHTML).join('\n');
+        const body = document.querySelector('.invoice').outerHTML;
+
+        // Restore live QR canvas.
+        if (savedQR !== null) qrContainer.innerHTML = savedQR;
+
+        const win = window.open('', '_blank');
+        win.document.write(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + filename + '</title>' +
+          styles + '</head><body>' + body + '</body></html>'
+        );
+        win.document.close();
+        // Small delay so external CSS finishes loading before the dialog opens.
+        setTimeout(() => { win.focus(); win.print(); win.close(); }, 600);
       },
     },
   });
